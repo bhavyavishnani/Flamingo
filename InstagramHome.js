@@ -1,27 +1,25 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
   FlatList,
-  StyleSheet,
+  Image,
   SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import Icon from "react-native-vector-icons/Feather";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 // Dummy data for stories
-const initialStories = [
+/* const initialStories = [
   { id: "1", user: "Your story", img: "https://randomuser.me/api/portraits/men/1.jpg", isUser: true },
   { id: "2", user: "aesha_28_", img: "https://randomuser.me/api/portraits/women/45.jpg" },
   { id: "3", user: "randomly.bhavya", img: "https://randomuser.me/api/portraits/men/32.jpg" },
   { id: "4", user: "ritu_chauhan711", img: "https://randomuser.me/api/portraits/women/28.jpg" },
   { id: "5", user: "jani_jagrat", img: "https://randomuser.me/api/portraits/men/15.jpg" },
-];
+]; */
 
 // Dummy data for posts
-const initialPosts = [
+/* const initialPosts = [
   {
     id: "1",
     user: "alice",
@@ -42,10 +40,37 @@ const initialPosts = [
     time: "5h",
     comments: 3,
   },
-];
+]; */
 
 export default function InstagramHome() {
-  const [posts, setPosts] = useState(initialPosts);
+  const [stories, setStories] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [ads, setAds] = useState(true);
+
+  const fetchStories = async () => {
+    try {
+      const response = await fetch('http://192.168.0.15:3000/api/stories');
+      const data = await response.json();
+      setStories(data);
+    } catch (error) {
+      console.error('Error fetching stories:', error);
+    }
+  };
+
+  const fetchPosts = async () => {
+    try {
+      const response = await fetch('http://192.168.0.15:3000/api/posts');
+      const data = await response.json();
+      setPosts(data);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStories();
+    fetchPosts();
+  }, []);
 
   const toggleLike = (id) => {
     setPosts(posts.map(post =>
@@ -159,7 +184,7 @@ export default function InstagramHome() {
       <View style={{ width: '%100' }}>
         <FlatList
           horizontal
-          data={initialStories}
+          data={stories}
           renderItem={renderStory}
           keyExtractor={(item) => item.id}
           style={styles.storiesContainer}
@@ -175,6 +200,7 @@ export default function InstagramHome() {
         keyExtractor={(item) => item.id}
         style={styles.postsContainer}
         contentContainerStyle={styles.postsContent}
+        showsVerticalScrollIndicator={false}
       />
 
       {/* Bottom Navigation */}
