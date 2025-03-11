@@ -1,0 +1,343 @@
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  SafeAreaView,
+} from "react-native";
+import Icon from "react-native-vector-icons/Feather";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+
+// Dummy data for stories
+const initialStories = [
+  { id: "1", user: "Your story", img: "https://randomuser.me/api/portraits/men/1.jpg", isUser: true },
+  { id: "2", user: "aesha_28_", img: "https://randomuser.me/api/portraits/women/45.jpg" },
+  { id: "3", user: "randomly.bhavya", img: "https://randomuser.me/api/portraits/men/32.jpg" },
+  { id: "4", user: "ritu_chauhan711", img: "https://randomuser.me/api/portraits/women/28.jpg" },
+  { id: "5", user: "jani_jagrat", img: "https://randomuser.me/api/portraits/men/15.jpg" },
+];
+
+// Dummy data for posts
+const initialPosts = [
+  {
+    id: "1",
+    user: "alice",
+    profileImg: "https://randomuser.me/api/portraits/women/45.jpg",
+    img: "https://picsum.photos/500/500?random=1",
+    likes: 120,
+    caption: "Enjoying the beauty of nature!",
+    time: "2h",
+    comments: 5,
+  },
+  {
+    id: "2",
+    user: "bob",
+    profileImg: "https://randomuser.me/api/portraits/men/32.jpg",
+    img: "https://picsum.photos/500/500?random=2",
+    likes: 95,
+    caption: "City lights never fail to amaze!",
+    time: "5h",
+    comments: 3,
+  },
+];
+
+export default function InstagramHome() {
+  const [posts, setPosts] = useState(initialPosts);
+
+  const toggleLike = (id) => {
+    setPosts(posts.map(post =>
+      post.id === id
+        ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
+        : post
+    ));
+  };
+
+  const renderStory = ({ item }) => (
+    <View
+      style={{
+        alignItems: "center",
+        marginHorizontal: 5,
+        width: 70,
+      }}
+    >
+      <View
+        style={{
+          borderWidth: 2,
+          borderColor: item.isUser ? "#FFFFFF" : "#FF8501",
+          borderRadius: 35,
+          padding: 2,
+        }}
+      >
+        <Image
+          source={{ uri: item.img }}
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+          }}
+        />
+      </View>
+      <Text
+        style={{
+          color: "#FFFFFF",
+          fontSize: 12,
+          marginTop: 4,
+          textAlign: "center",
+        }}
+        numberOfLines={1}
+      >
+        {item.user}
+      </Text>
+    </View>
+  );
+
+  const renderPost = ({ item }) => (
+    <View style={styles.postContainer}>
+      {/* Post Header */}
+      <View style={styles.postHeader}>
+        <View style={styles.postHeaderLeft}>
+          <Image source={{ uri: item.profileImg }} style={styles.profileImage} />
+          <Text style={styles.userText}>{item.user}</Text>
+        </View>
+        <TouchableOpacity>
+          <Image source={require('./m_icon/dots.png')} style={{ width: 22, height: 20 }} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Post Image */}
+      <Image source={{ uri: item.img }} style={styles.postImage} />
+
+      {/* Post Actions */}
+      <View style={styles.postActions}>
+        <View style={styles.actionIcons}>
+          <TouchableOpacity onPress={() => toggleLike(item.id)}>
+            <Image source={item.liked ? require('./m_icon/like-d.png') : require('./m_icon/like.png')} style={{ width: 30, height: 28 }} />
+          </TouchableOpacity>
+          <TouchableOpacity>
+          <Image source={require('./m_icon/comment.png')} style={{ width: 30, height: 28 }} />
+          </TouchableOpacity>
+          <TouchableOpacity>
+          <Image source={require('./m_icon/send.png')} style={{ width: 28, height: 26 }} />
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity>
+          <Image source={require('./m_icon/save.png')} style={{ width: 30, height: 28 }} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Post Info */}
+      <View style={styles.postInfo}>
+        <Text style={styles.likesText}>{item.likes} likes</Text>
+        <Text style={styles.captionText}>
+          <Text style={styles.userText}>{item.user} </Text>
+          {item.caption}
+        </Text>
+        <Text style={styles.commentsText}>View all {item.comments} comments</Text>
+        <Text style={styles.timeText}>{item.time}</Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={{ color: '#fff', fontSize: 20 }}>Flamingo</Text>
+        <View style={styles.headerIcons}>
+
+          <TouchableOpacity>
+            <Image source={require('./m_icon/dm.png')} style={{ width: 30, height: 28 }} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Stories */}
+
+      <View style={{ width: '%100' }}>
+        <FlatList
+          horizontal
+          data={initialStories}
+          renderItem={renderStory}
+          keyExtractor={(item) => item.id}
+          style={styles.storiesContainer}
+          contentContainerStyle={styles.storiesContent}
+          showsHorizontalScrollIndicator={false}
+        />
+      </View>
+
+      {/* Posts */}
+      <FlatList
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={(item) => item.id}
+        style={styles.postsContainer}
+        contentContainerStyle={styles.postsContent}
+      />
+
+      {/* Bottom Navigation */}
+      <View style={styles.navBar}>
+        <TouchableOpacity>
+        <Image source={require('./m_icon/home.png')} style={{ width: 30, height: 28 }} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+        <Image source={require('./m_icon/search.png')} style={{ width: 30, height: 28 }} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+        <Image source={require('./m_icon/post.png')} style={{ width: 30, height: 28 }} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+        <Image source={require('./m_icon/like.png')} style={{ width: 30, height: 28 }} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+        <Image source={{uri: 'https://randomuser.me/api/portraits/men/1.jpg'}} style={{ width: 30, height: 28, borderRadius: 100}} />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#000000",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#262626",
+  },
+  logo: {
+    width: 100,
+    height: 30,
+    resizeMode: "contain",
+  },
+  headerIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerIcon: {
+    marginLeft: 20,
+  },
+  storiesContainer: {
+    backgroundColor: "#000000",
+  },
+  storiesContent: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  storyContainer: {
+    alignItems: "center",
+    marginHorizontal: 5,
+    width: 70,
+  },
+  storyImageWrapper: {
+    borderWidth: 2,
+    borderColor: "#FF8501", // Instagram-style orange gradient border
+    borderRadius: 35,
+    padding: 2,
+  },
+  userStory: {
+    borderColor: "#FFFFFF", // White border for "Your Story"
+  },
+  storyImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  storyText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: "center",
+  },
+  postsContainer: {
+    flex: 1,
+  },
+  postsContent: {
+    paddingTop: 0, // Gap remove karne ke liye
+  },
+  postContainer: {
+    marginBottom: 10,
+    backgroundColor: "#000000",
+  },
+  postHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 10,
+  },
+  postHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  profileImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 10,
+  },
+  userText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  postImage: {
+    width: "100%",
+    height: 400,
+    resizeMode: "cover",
+  },
+  postActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 10,
+  },
+  actionIcons: {
+    flexDirection: "row",
+    
+    width: '30%',
+    justifyContent: 'space-around'
+  },
+  actionIcon: {
+    marginRight: 15,
+    
+  },
+  postInfo: {
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+  },
+  likesText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  captionText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  commentsText: {
+    color: "#8E8E8E",
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  timeText: {
+    color: "#8E8E8E",
+    fontSize: 12,
+  },
+  navBar: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 10,
+    backgroundColor: "#000000",
+    borderTopWidth: 1,
+    borderTopColor: "#262626",
+  },
+});
